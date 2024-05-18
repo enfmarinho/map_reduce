@@ -1,4 +1,3 @@
-    ### NAO COMMITAR ###
 
 defmodule MapReduce.MixProject do
   use Mix.Project
