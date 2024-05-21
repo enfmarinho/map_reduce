@@ -4,6 +4,11 @@ defmodule MapReduce do
     # System.schedulers_online()
   end
 
+  def concatena([], curr),do: curr 
+  def concatena([head | tail], curr) do
+    concatena(tail, head ++ curr)
+  end
+
   # DIVIDIR DATASET
 
   # Divide a lista de termos em uma lista de listas
