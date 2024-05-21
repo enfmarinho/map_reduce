@@ -11,7 +11,7 @@ defmodule MapReduce do
     [list]
   end
   def formar_listas(list, num) do
-    nova_list = 
+    nova_list =
       list
       |> Enum.split(num)
     [nova_list |> elem(0)] ++ (nova_list |> elem(1) |> formar_listas(num))
@@ -25,6 +25,7 @@ defmodule MapReduce do
     formar_listas(list, num)
   end
 
+  # Essa funcao é usada para o caso de contagem de palavras
   def dividir_dataset(file_path)  do
     file_path
     |> File.read()
@@ -33,11 +34,8 @@ defmodule MapReduce do
     |> String.split(" ")
   end
 
-  defp master() do
-    url_caminho = IO.gets("Digite a url....: ")
-    # Lê os dados do arquivo e retorna uma lista de listas
-    dividir_dataset(url_caminho)
-    |> split_lista
+  defp master(list, fun_map, fun_reduce) do
+
 
     # JOGAR NOS MAPS
 
@@ -46,6 +44,7 @@ defmodule MapReduce do
     # TERMINOU?
 
     # Receber da fila de mensagens dos escravos
+    # Juntar as particoes numa lista
 
     # SHUFFLE
     # Ordenar pela chaves
@@ -62,36 +61,51 @@ defmodule MapReduce do
     [fun.(h)] ++ recebe_map(t, fun)
   end
 
-  # 'default' é o valor atribuído caso haja um numero impar de elementos
-  def recebe_reduce([], fun, default) do
-    default
+  # 'acc' é o valor neutro da operacao
+  def recebe_reduce([], _, acc) do
+    acc
   end
   def recebe_reduce(list,fun, _) when length(list) == 1 do
     hd(list)
   end
-  def recebe_reduce(list, fun, default) when length(list) >= 2 do
+  def recebe_reduce(list, fun, acc) when length(list) >= 2 do
     # Separa os dois primeiros elementos da lista
     list1 = list |> Enum.split(2) |> elem(0)
     list2 = list |> Enum.split(2) |> elem(1)
-    fun.(Enum.at(list, 0), Enum.at(list, 1)) |> fun.(recebe_reduce(list2, fun, default))
+    fun.(Enum.at(list, 0), Enum.at(list, 1)) |> fun.(recebe_reduce(list2, fun, acc))
   end
 
   defp recebe_threads_map() do
     # recebe threads da map
   end
 
+  def map_gerence(_, []) do
+    :ok
+  end
+  def map_gerence(fun_map, [h|t]) do
+      spawn(MapReduce, :concurrent_map, [h, fun_map, self])
+      map_gerence(fun_map, t)
+  end
+
+  def concurrent_map(list ,fun_map, pid) do
+    send pid, recebe_map(list, fun_map)
+  end
+
   defp shuffle(list) when is_list(list) do
+
   end
   # == Essa seria a função pública principal
   # Chamada para o caso geral (com lista)
-  def main(list, map_func, reduce_func) when is_list(list) do 
-    list |> split_lista
+  def main(list, map_func, reduce_func) when is_list(list) do
+    list
+    |> split_lista()
+    |> master(map_func, reduce_func)
+  # |> saida()
   end
   # Chamada recebendo o caminho de um arquivo (para o caso de fazer a contagem de palavras)
   def main(file_path \\ "test.txt", map_func, reduce_func) do
     dividir_dataset(file_path)
     |> split_lista
-
   end
 
 end
