@@ -55,14 +55,25 @@ defmodule MapReduce do
     # Manda os escravos realizarem os reduces
   end
 
-  defp recebe_map() do
-    # Map here
-    # EX: doubled_list = Enum.map(list, fn x -> x * 2 end)
+  def recebe_map([], fun) do
+    []
+  end
+  def recebe_map([h|t], fun) do
+    [fun.(h)] ++ recebe_map(t, fun)
   end
 
-  defp recebe_reduce() do
-    # Reduce here
-    # EX: sum = Enum.reduce(list, fn x, acc -> x + acc end)
+  # 'default' é o valor atribuído caso haja um numero impar de elementos
+  def recebe_reduce([], fun, default) do
+    default
+  end
+  def recebe_reduce(list,fun, _) when length(list) == 1 do
+    hd(list)
+  end
+  def recebe_reduce(list, fun, default) when length(list) >= 2 do
+    # Separa os dois primeiros elementos da lista
+    list1 = list |> Enum.split(2) |> elem(0)
+    list2 = list |> Enum.split(2) |> elem(1)
+    fun.(Enum.at(list, 0), Enum.at(list, 1)) |> fun.(recebe_reduce(list2, fun, default))
   end
 
   defp recebe_threads_map() do
