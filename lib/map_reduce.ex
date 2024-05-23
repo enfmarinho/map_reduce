@@ -4,7 +4,6 @@ defmodule MapReduce do
     # System.schedulers_online()
   end
  
-  # Deve ter um jeito melhor de receber
   def receber_msgs(msgs \\ [], num_msgs) when num_msgs > 0 do
     receive do
        msg -> receber_msgs([msg | msgs], num_msgs - 1)
@@ -20,8 +19,6 @@ defmodule MapReduce do
   def concatena([head | tail], curr \\ []) do
     concatena(tail, head ++ curr)
   end
-
-  # DIVIDIR DATASET
 
   # Divide a lista de termos em uma lista de listas
   def formar_listas(list, num) when num >= length(list) do
@@ -56,30 +53,12 @@ defmodule MapReduce do
     receber_msgs(length(list))
     |> concatena()
 
-    shuffle_sort(list, :id)
+    list = shuffle_sort(list, :id)
     {first, second} = Enum.split(1, list)
     particoes = dividir_dataset(second, first, [], [first])
-    
-  # O que falta {
-    # |> shuffle
-    # |> split
-    # reduce_manager(list, fun_reduce, acc)
-  # }
-    # JOGAR NOS MAPS
 
-    # ENviar para os escravos
-
-    # TERMINOU?
-
-    # Receber da fila de mensagens dos escravos
-    # Juntar as particoes numa lista
-
-    # SHUFFLE Done
-    # Ordenar pela chaves Done 
-
-    # TERMINOU O SHUFFLE?
-    # REDUCE
-    # Manda os escravos realizarem os reduces
+    # TODO terminar a parte do map
+    reduce_manager(particoes, fun_reduce, _)
   end
 
   def recebe_map([], fun) do
@@ -126,11 +105,6 @@ defmodule MapReduce do
       dividir_dataset(second, first, listaLista ++ lista, [first])
     end
   end
-  
-
-  defp recebe_threads_map() do
-    # recebe threads da map
-  end
 
   # 'pid_list' é uma lista contendo os PIDs das threads utlizadas (será necesssario para receber as mensagens)
   def map_manager([], _) do
@@ -157,15 +131,6 @@ defmodule MapReduce do
     send pid, recebe_reduce(list,fun_red, acc)
   end
 
-  # Ordena em funcao da chave, ja divindo em uma lista de listas
-  # defp shuffle([h | t])  do
-    # if (elem(h,0) > elem(hd(t), 0)) do
-      
-    # end
-  #end
-
-
-  # * Essa seria a função pública principal
   # Chamada para o caso geral (com lista)
   def main(list, map_func, reduce_func, acc) when is_list(list) do
     list
