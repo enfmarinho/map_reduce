@@ -112,7 +112,8 @@ defmodule MapReduce do
     |> Enum.shuffle()
     |> Enum.sort_by(&Map.get(&1, keys))
   end
-  
+
+
 
   defp recebe_threads_map() do
     # recebe threads da map
