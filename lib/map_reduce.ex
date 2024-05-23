@@ -16,9 +16,8 @@ defmodule MapReduce do
     map_manager(list, fun_map)
     list = receber_msgs(length(list)) |> concatena()
 
-    list = shuffle_sort(list, :id) # TODO fix this, Compiler message: expected a Map but received a list
+    list = shuffle_sort(list, :id)
     {first, second} = Enum.split(list, 1)
-    # TODO checar funcar dividir_dataset (nao consigo compilar por causa da versao do meu compilador)
     particoes = dividir_dataset(second, hd(first), [], [first])
 
     # TODO terminar reduce
@@ -83,7 +82,7 @@ defmodule MapReduce do
 
   defp shuffle_sort(maps , keys) do
     maps 
-    |> Enum.shuffle()
+    |> Enum.shuffle() # TODO Porque esse shuffle?
     |> Enum.sort_by(&Map.get(&1, keys))
   end
 
@@ -107,7 +106,7 @@ defmodule MapReduce do
     send pid, recebe_reduce(list, fun_red, acc)
   end
 
-  defp recebe_reduce(list,fun, _) when length(list) == 1, do: hd(list)
+  defp recebe_reduce(list, _, _) when length(list) == 1, do: hd(list)
   # Esaa é a chamada equivalnete a primeira chamada do reduce, em que teremos que calcular
   # o primeiro temro da lista com o 'acc'
   defp recebe_reduce([h|t], fun, acc) do
