@@ -22,7 +22,9 @@ defmodule MapReduce do
     particoes = dividir_dataset(second, first, [], [first])
 
     # TODO terminar a parte do map
-    # reduce_manager(particoes, fun_reduce, _)
+    reduce_manager(particoes, fun_reduce, acc)
+    receber_msgs(length(list))
+    # TODO retornar resultado
   end
 
   def number_of_native_threads do
@@ -74,13 +76,6 @@ defmodule MapReduce do
     |> String.split(" ")
   end
 
-  defp recebe_map([], fun) do
-    []
-  end
-  defp recebe_map([h|t], fun) do
-    [fun.(h)] ++ recebe_map(t, fun)
-  end
-
   # 'pid_list' é uma lista contendo os PIDs das threads utlizadas (será necesssario para receber as mensagens)
   defp map_manager([], _) do
     :ok
@@ -93,6 +88,13 @@ defmodule MapReduce do
 
   defp concurrent_map(list ,fun_map, pid) do
     send pid, recebe_map(list, fun_map)
+  end
+
+  defp recebe_map([], fun) do
+    []
+  end
+  defp recebe_map([h|t], fun) do
+    [fun.(h)] ++ recebe_map(t, fun)
   end
 
   defp shuffle_sort(maps , keys) do
@@ -109,6 +111,17 @@ defmodule MapReduce do
     else
       dividir_dataset(second, first, listaLista ++ lista, [first])
     end
+  end
+
+  defp reduce_manager([], _, _) do
+    :ok
+  end
+  defp reduce_manager([h|t], fun_red, acc) do
+    spawn(MapReduce, :concurrent_reduce, [h, fun_red, acc, self])
+    reduce_manager(t, fun_red, acc)
+  end
+  defp concurrent_reduce(list, fun_red, acc,pid) do
+    send pid, recebe_reduce(list, fun_red, acc)
   end
 
   # 'acc' é o valor neutro da operacao (Deve ser alterado)
@@ -130,16 +143,5 @@ defmodule MapReduce do
   defp recebe_reduce([h|t], fun, acc) do
     # Separa os dois primeiros elementos da lista
     fun.(acc, h) |> fun.(recebe_reduce(t, fun))
-  end
-
-  defp reduce_manager([], _, _) do
-    :ok
-  end
-  defp reduce_manager([h|t], fun_red, acc) do
-    spawn(MapReduce, :concurrent_reduce, [h, fun_red, acc, self])
-    reduce_manager(t, fun_red, acc)
-  end
-  defp concurrent_reduce(list, fun_red, acc,pid) do
-    send pid, recebe_reduce(list,fun_red, acc)
   end
 end
