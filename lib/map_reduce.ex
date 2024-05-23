@@ -70,8 +70,8 @@ defmodule MapReduce do
     # Receber da fila de mensagens dos escravos
     # Juntar as particoes numa lista
 
-    # SHUFFLE
-    # Ordenar pela chaves
+    # SHUFFLE Done
+    # Ordenar pela chaves Done 
 
     # TERMINOU O SHUFFLE?
     # REDUCE
@@ -106,6 +106,12 @@ defmodule MapReduce do
     # Separa os dois primeiros elementos da lista
     fun.(acc, h) |> fun.(recebe_reduce(t, fun))
   end
+
+  def shuffle_sort(maps , keys) do
+    maps 
+    |> Enum.shuffle()
+    |> Enum.sort_by(&Map.get(&1, keys))
+  end
   
 
   defp recebe_threads_map() do
@@ -138,11 +144,13 @@ defmodule MapReduce do
   end
 
   # Ordena em funcao da chave, ja divindo em uma lista de listas
-  defp shuffle([h | t])  do
+  # defp shuffle([h | t])  do
     # if (elem(h,0) > elem(hd(t), 0)) do
       
     # end
-  end
+  #end
+
+
   # * Essa seria a função pública principal
   # Chamada para o caso geral (com lista)
   def main(list, map_func, reduce_func, acc) when is_list(list) do
