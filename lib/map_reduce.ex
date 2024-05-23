@@ -52,9 +52,13 @@ defmodule MapReduce do
   end
 
   defp master(list, fun_map, fun_reduce,acc) do
-  map_manager(list, fun_map)
-  receber_msgs(length(list))
-  |> concatena()
+    map_manager(list, fun_map)
+    receber_msgs(length(list))
+    |> concatena()
+
+    shuffle_sort(list, :id)
+    {first, second} = Enum.split(1, list)
+    particoes = dividir_dataset(second, first, [], [first])
     
   # O que falta {
     # |> shuffle
@@ -113,7 +117,16 @@ defmodule MapReduce do
     |> Enum.sort_by(&Map.get(&1, keys))
   end
 
-
+  def dividir_dataset([], _, listaLista, lista), do: listaLista ++ lista
+  def dividir_dataset(data, anterior, listaLista, lista) do
+    {first, second} = Enum.split(data, 1)
+    if anterior == first do
+      dividir_dataset(second, first, listaLista, lista ++ first)
+    else
+      dividir_dataset(second, first, listaLista ++ lista, [first])
+    end
+  end
+  
 
   defp recebe_threads_map() do
     # recebe threads da map
