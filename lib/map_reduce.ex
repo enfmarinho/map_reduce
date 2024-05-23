@@ -14,8 +14,7 @@ defmodule MapReduce do
 
   defp master(list, fun_map, fun_reduce,acc) do
     map_manager(list, fun_map)
-    receber_msgs(length(list))
-    |> concatena()
+    list = receber_msgs(length(list)) |> concatena()
 
     list = shuffle_sort(list, :id) # TODO fix this, Compiler message: expected a Map but received a list
     {first, second} = Enum.split(list, 1)
@@ -25,7 +24,6 @@ defmodule MapReduce do
     # TODO terminar reduce
     reduce_manager(particoes, fun_reduce, acc)
     receber_msgs(length(list))
-    # TODO retornar resultado
   end
 
   defp number_of_native_threads(), do: System.schedulers()
@@ -70,7 +68,7 @@ defmodule MapReduce do
   defp map_manager([], _), do: :ok
   defp map_manager([h|t], fun_map) do
     # Adiciona o novo PID à lista  
-    spawn(MapReduce, :concurrent_map, [h, fun_map, self])
+    spawn(MapReduce, :concurrent_map, [h, fun_map, self()])
     map_manager(t, fun_map)
   end
 
@@ -78,7 +76,7 @@ defmodule MapReduce do
     send pid, recebe_map(list, fun_map)
   end
 
-  defp recebe_map([], fun), do: []
+  defp recebe_map([], _), do: []
   defp recebe_map([h|t], fun) do
     [fun.(h)] ++ recebe_map(t, fun)
   end
@@ -101,7 +99,7 @@ defmodule MapReduce do
 
   defp reduce_manager([], _, _), do: :ok
   defp reduce_manager([h|t], fun_red, acc) do
-    spawn(MapReduce, :concurrent_reduce, [h, fun_red, acc, self])
+    spawn(MapReduce, :concurrent_reduce, [h, fun_red, acc, self()])
     reduce_manager(t, fun_red, acc)
   end
 
