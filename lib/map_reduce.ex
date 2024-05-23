@@ -17,8 +17,8 @@ defmodule MapReduce do
     receber_msgs(length(list))
     |> concatena()
 
-    list = shuffle_sort(list, :id)
-    {first, second} = Enum.split(1, list)
+    list = shuffle_sort(list, :id) # TODO fix this, Compiler message: expected a Map but received a list
+    {first, second} = Enum.split(list, 1)
     # TODO checar funcar dividir_dataset (nao consigo compilar por causa da versao do meu compilador)
     particoes = dividir_dataset(second, hd(first), [], [first])
 
@@ -105,7 +105,7 @@ defmodule MapReduce do
     reduce_manager(t, fun_red, acc)
   end
 
-  defp concurrent_reduce(list, fun_red, acc,pid) do
+  def concurrent_reduce(list, fun_red, acc,pid) do
     send pid, recebe_reduce(list, fun_red, acc)
   end
 
