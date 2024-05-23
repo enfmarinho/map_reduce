@@ -74,7 +74,7 @@ defmodule MapReduce do
     map_manager(t, fun_map)
   end
 
-  defp concurrent_map(list ,fun_map, pid) do
+  def concurrent_map(list ,fun_map, pid) do
     send pid, recebe_map(list, fun_map)
   end
 
