@@ -32,10 +32,10 @@ defmodule MapReduce do
   end
 
   defp split_lista(list) do
-    multi = IO.gets("Digite o multiplicador: ")
-     |> String.replace("\n", "")   # Remove o '\n'
-     |> String.to_integer
-    num = number_of_native_threads() * multi
+    # multi = IO.gets("Digite o multiplicador: ")
+    #  |> String.replace("\n", "")   # Remove o '\n'
+    #  |> String.to_integer
+    num = div(length(list),number_of_native_threads())
     formar_listas(list, num)
   end
 
@@ -49,16 +49,17 @@ defmodule MapReduce do
   end
 
   defp master(list, fun_map, fun_reduce,acc) do
+    aux = length(list)  # TODO substituir
     map_manager(list, fun_map)
     receber_msgs(length(list))
     |> concatena()
+    |> shuffle_sort(:id)
+    |> formar_listas(4)  #TODO Mudar o numero de listas dps
+    # |> reduce_manager(fun_reduce, acc)
+    # receber_msgs(aux)
 
-    list = shuffle_sort(list, :id)
-    {first, second} = Enum.split(1, list)
-    particoes = dividir_dataset(second, first, [], [first])
-
-    # TODO terminar a parte do map
-    reduce_manager(particoes, fun_reduce, _)
+    # # TODO terminar a parte do map
+    # reduce_manager(particoes, fun_reduce, acc)
   end
 
   def recebe_map([], fun) do
@@ -68,27 +69,28 @@ defmodule MapReduce do
     [fun.(h)] ++ recebe_map(t, fun)
   end
 
-  # 'acc' é o valor neutro da operacao (Deve ser alterado)
-  def recebe_reduce([], _) do
-    # acc
+  
+  # Esaa é a chamada equivalnete a primeira chamada do reduce, em que teremos que calcular
+  # o primeiro temro da lista com o 'acc'
+  def recebe_reduce([h|t], fun, acc, bit \\ true) when bit == true do
+    # Separa os dois primeiros elementos da lista
+    fun.(acc, h) |> fun.(recebe_reduce(t, fun, acc,false))
   end
-  def recebe_reduce(list,fun, _) when length(list) == 1 do
-    hd(list)
-  end
-  # Essa é chamada normal utilizada a partir da segunda iteração, em que será utilizaodo o valor "acc"
-  def recebe_reduce(list, fun) when length(list) >= 2 do
+  
+  def recebe_reduce(list, fun, acc, bit) when length(list) >= 2 do
     # Separa os dois primeiros elementos da lista
     list1 = list |> Enum.split(2) |> elem(0)
     list2 = list |> Enum.split(2) |> elem(1)
-    fun.(Enum.at(list, 0), Enum.at(list, 1)) |> fun.(recebe_reduce(list2, fun))
+    fun.(Enum.at(list, 0), Enum.at(list, 1)) |> fun.(recebe_reduce(list2, fun, acc, false))
   end
 
-  # Esaa é a chamada equivalnete a primeira chamada do reduce, em que teremos que calcular
-  # o primeiro temro da lista com o 'acc'
-  def recebe_reduce([h|t], fun, acc) do
-    # Separa os dois primeiros elementos da lista
-    fun.(acc, h) |> fun.(recebe_reduce(t, fun))
+  def recebe_reduce(list, fun, acc, _) when length(list) == 1 do
+    fun.(hd(list),acc)
   end
+  def recebe_reduce([], fun, acc, _) do
+    %{}
+  end
+
 
   def shuffle_sort(maps , keys) do
     maps 
@@ -131,17 +133,38 @@ defmodule MapReduce do
     send pid, recebe_reduce(list,fun_red, acc)
   end
 
+  def map_words(word) do
+    %{id: word, value: 1}
+  end
+
+  def reduce_words(word_map1, word_map2) do
+    %{
+        id: word_map1[:id],
+        content: word_map1[:content] + word_map2[:content]
+      }
+  end
+  def reduce_words(%{}, word_map2) do
+    word_map2
+  end
+  def reduce_words(word_map1 ,%{} ) do
+    word_map1
+  end
+ 
+
+
   # Chamada para o caso geral (com lista)
   def main(list, map_func, reduce_func, acc) when is_list(list) do
     list
     |> split_lista()
-    |> master(map_func, reduce_func, acc)
+    # |> master(map_func, reduce_func, acc)
   # |> saida()
   end
   # Chamada recebendo o caminho de um arquivo (para o caso de fazer a contagem de palavras)
-  def main(file_path \\ "test.txt", map_func, reduce_func, acc) do
+  def main(file_path \\ "test.txt", map_func \\ &map_words/1, reduce_func \\ &reduce_words/2, acc \\ %{}) do
     dividir_dataset(file_path)
     |> main(map_func, reduce_func, acc)
   end
+
+
 
 end
