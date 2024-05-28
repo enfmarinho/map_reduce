@@ -80,9 +80,7 @@ defmodule MapReduce do
   end
 
   defp shuffle_sort(maps , keys) do
-    maps
-    |> Enum.shuffle() # TODO Porque esse shuffle?
-    |> Enum.sort_by(&Map.get(&1, keys))
+    maps |> Enum.sort_by(&Map.get(&1, keys))
   end
 
   defp particionar_shuffle([], listaLista), do: listaLista
