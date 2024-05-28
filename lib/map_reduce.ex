@@ -7,22 +7,22 @@ defmodule MapReduce do
   # |> saida()
   end
   # Chamada recebendo o caminho de um arquivo (para o caso de fazer a contagem de palavras)
-  def main(file_path \\ "test.txt", map_func, reduce_func, acc) do
+  def main(file_path \\ "test.txt", map_func \\ &map_words/1, reduce_func \\ &reduce_words/2, acc \\ %{}) do
     dividir_dataset(file_path)
     |> main(map_func, reduce_func, acc)
   end
 
   defp master(list, fun_map, fun_reduce,acc) do
     map_manager(list, fun_map)
-    list = receber_msgs(length(list)) |> concatena()
-
+    list = receber_msgs(length(list))
+    |> concatena()
     list = shuffle_sort(list, :id)
     {first, second} = Enum.split(list, 1)
-    particoes = dividir_dataset(second, hd(first), [], [first])
+    particoes = particionar_shuffle(second, first, [], [first])
 
     # TODO terminar reduce
-    reduce_manager(particoes, fun_reduce, acc)
-    receber_msgs(length(list))
+    # reduce_manager(particoes, fun_reduce, acc)
+    # receber_msgs(length(list))
   end
 
   defp number_of_native_threads(), do: System.schedulers()
@@ -66,7 +66,7 @@ defmodule MapReduce do
   # 'pid_list' é uma lista contendo os PIDs das threads utlizadas (será necesssario para receber as mensagens)
   defp map_manager([], _), do: :ok
   defp map_manager([h|t], fun_map) do
-    # Adiciona o novo PID à lista  
+    # Adiciona o novo PID à lista
     spawn(MapReduce, :concurrent_map, [h, fun_map, self()])
     map_manager(t, fun_map)
   end
@@ -81,18 +81,18 @@ defmodule MapReduce do
   end
 
   defp shuffle_sort(maps , keys) do
-    maps 
+    maps
     |> Enum.shuffle() # TODO Porque esse shuffle?
     |> Enum.sort_by(&Map.get(&1, keys))
   end
 
-  defp dividir_dataset([], _, listaLista, lista), do: listaLista ++ lista
-  defp dividir_dataset(data, anterior, listaLista, lista) do
+  defp particionar_shuffle([], _, listaLista, lista), do: listaLista ++ lista
+  defp particionar_shuffle(data, anterior, listaLista, lista) do
     {first, second} = Enum.split(data, 1)
-    if anterior == first do
-      dividir_dataset(second, first, listaLista, lista ++ first)
+    if  Map.take(hd(first), [:id]) == Map.take(hd(anterior), [:id]) do
+      particionar_shuffle(second, first, listaLista, lista ++ first)
     else
-      dividir_dataset(second, first, listaLista ++ lista, [first])
+      particionar_shuffle(second, first, listaLista ++ lista, [first])
     end
   end
 
@@ -102,26 +102,48 @@ defmodule MapReduce do
     reduce_manager(t, fun_red, acc)
   end
 
-  def concurrent_reduce(list, fun_red, acc,pid) do
-    send pid, recebe_reduce(list, fun_red, acc)
+  def concurrent_reduce(list, fun_red, acc, pid) do
+    send pid, Enum.reduce(list, fun_red, acc)
   end
 
-  defp recebe_reduce(list, _, _) when length(list) == 1, do: hd(list)
-  # Esaa é a chamada equivalnete a primeira chamada do reduce, em que teremos que calcular
-  # o primeiro temro da lista com o 'acc'
-  defp recebe_reduce([h|t], fun, acc) do
-    # Separa os dois primeiros elementos da lista
-    fun.(acc, h) |> fun.(recebe_reduce(t, fun))
+  # defp recebe_reduce(lista, fun, acc)  do
+  #   Enum.reduce(lista, fun, acc)
+  # end
+
+  # # 'acc' é o valor neutro da operacao (Deve ser alterado)
+  # defp recebe_reduce([], _) do
+  #   # acc
+  # end
+  # # Essa é chamada normal utilizada a partir da segunda iteração, em que será utilizaodo o valor "acc"
+  # defp recebe_reduce(list, fun, acc, first) when length(list) >= 2 do
+  #   # Separa os dois primeiros elementos da lista
+  #   list1 = list |> Enum.split(2) |> elem(0)
+  #   list2 = list |> Enum.split(2) |> elem(1)
+  #   fun.(Enum.at(list, 0), Enum.at(list, 1)) |> fun.(recebe_reduce(list2, fun))
+  # end
+
+
+  def map_words(word) do
+    %{
+       :id => word,
+       :count => 1
+     }
   end
-  # 'acc' é o valor neutro da operacao (Deve ser alterado)
-  defp recebe_reduce([], _) do
-    # acc
+
+  def reduce_words(word1, word2) when word1 == %{} do
+    word2
   end
-  # Essa é chamada normal utilizada a partir da segunda iteração, em que será utilizaodo o valor "acc"
-  defp recebe_reduce(list, fun) when length(list) >= 2 do
-    # Separa os dois primeiros elementos da lista
-    list1 = list |> Enum.split(2) |> elem(0)
-    list2 = list |> Enum.split(2) |> elem(1)
-    fun.(Enum.at(list, 0), Enum.at(list, 1)) |> fun.(recebe_reduce(list2, fun))
+  def reduce_words(word1, word2) when word2 == %{} do
+    word1
   end
+  def reduce_words(word1, word2) do
+    # Já vamos considerar que as duas palavras tem mesmo 'id' (já foi feito o shuffle)
+    %{
+      :id => word1[:id],
+      :count => word1[:count] + word2[:count]
+     }
+  end
+
+
+
 end
