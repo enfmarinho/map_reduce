@@ -96,7 +96,7 @@ defmodule MapReduce do
   end
 
   def concurrent_reduce(list, fun_red, acc, pid) do
-    send pid, Enum.reduce(list, fun_red, acc)
+    send pid, Enum.reduce(list, acc, fun_red)
   end
 
   # defp recebe_reduce(lista, fun, acc)  do
