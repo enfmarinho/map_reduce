@@ -17,8 +17,7 @@ defmodule MapReduce do
     list = receber_msgs(length(list))
     |> concatena()
     list = shuffle_sort(list, :id)
-    {first, second} = Enum.split(list, 1)
-    particoes = particionar_shuffle(second, first, [], [first])
+    particoes = particionar_shuffle(list, [])
 
     # TODO terminar reduce
     # reduce_manager(particoes, fun_reduce, acc)
@@ -86,14 +85,10 @@ defmodule MapReduce do
     |> Enum.sort_by(&Map.get(&1, keys))
   end
 
-  defp particionar_shuffle([], _, listaLista, lista), do: listaLista ++ lista
-  defp particionar_shuffle(data, anterior, listaLista, lista) do
-    {first, second} = Enum.split(data, 1)
-    if  Map.take(hd(first), [:id]) == Map.take(hd(anterior), [:id]) do
-      particionar_shuffle(second, first, listaLista, lista ++ first)
-    else
-      particionar_shuffle(second, first, listaLista ++ lista, [first])
-    end
+  defp particionar_shuffle([], listaLista), do: listaLista
+  defp particionar_shuffle(dataset, listaLista) do
+    {current, rest} = Enum.split_while(dataset, fn x -> x[:id] == hd(dataset)[:id] end)
+    particionar_shuffle(rest, listaLista ++ current)
   end
 
   defp reduce_manager([], _, _), do: :ok
