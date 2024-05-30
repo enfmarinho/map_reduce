@@ -1,4 +1,0 @@
-defmodule WordCount do
-    
-end
-

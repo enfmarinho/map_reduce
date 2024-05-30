@@ -1,1 +1,2 @@
- Lorem Lorem Lorem ipsum dolor  Lorem sit amet, consectetur
+While these tools are amazing, learners should be aware of the impacts that using such tools can have on core competency.
+ David Humphrey, a computer science professor, wrote about ChatGPT and its potentially negative impacts on core learning. It is a good read about the pitfalls of using generative AI in an educational context
