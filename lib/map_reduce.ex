@@ -69,7 +69,7 @@ defmodule MapReduce do
   end
   def map_manager([h|t], fun_map) do
     # Adiciona o novo PID à lista  
-    spawn(MapReduce, :concurrent_map, [h, fun_map, self])
+    spawn(MapReduce, :concurrent_map, [h, fun_map, self()])
     map_manager(t, fun_map)
   end
   def concurrent_map(list ,fun_map, pid) do
