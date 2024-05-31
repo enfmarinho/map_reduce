@@ -34,7 +34,7 @@ defmodule MapReduce do
   defp concatena([], curr), do: curr
   defp concatena([head | tail], curr \\ []), do: concatena(tail, head ++ curr)
 
-  def formar_listas(list, num) do
+  defp formar_listas(list, num) do
     nova_list =
       list
       |> Enum.split(num)
@@ -64,10 +64,10 @@ defmodule MapReduce do
     |> String.split(" ")
   end
   # 'pid_list' é uma lista contendo os PIDs das threads utlizadas (será necesssario para receber as mensagens)
-  def map_manager([], _) do
+  defp map_manager([], _) do
     :ok
   end
-  def map_manager([h|t], fun_map) do
+  defp map_manager([h|t], fun_map) do
     # Adiciona o novo PID à lista  
     spawn(MapReduce, :concurrent_map, [h, fun_map, self()])
     map_manager(t, fun_map)
@@ -76,18 +76,18 @@ defmodule MapReduce do
     send pid, recebe_map(list, fun_map)
   end
 
-  def recebe_map([], _) do
+  defp recebe_map([], _) do
     []
   end
-  def recebe_map([h|t], fun) do
+  defp recebe_map([h|t], fun) do
     [fun.(h)] ++ recebe_map(t, fun)
   end
 
 
-  def reduce_manager([], _, _) do
+  defp reduce_manager([], _, _) do
     :ok
   end
-  def reduce_manager([h|t], fun_red, acc) do
+  defp reduce_manager([h|t], fun_red, acc) do
     spawn(MapReduce, :concurrent_reduce, [h, fun_red, acc, self()])
     reduce_manager(t, fun_red, acc)
   end
@@ -100,27 +100,27 @@ defmodule MapReduce do
     maps |> Enum.sort_by(&Map.get(&1, keys))
   end
 
-  def particionar_shuffle([], listaLista), do: listaLista
-  def particionar_shuffle(dataset, listaLista) do
+  defp particionar_shuffle([], listaLista), do: listaLista
+  defp particionar_shuffle(dataset, listaLista) do
     {current, rest} = Enum.split_while(dataset, fn x -> x[:id] == hd(dataset)[:id] end)
     particionar_shuffle(rest, listaLista ++ [current])
     # current
   end
 
-  def map_words(word) do
+  defp map_words(word) do
     %{
        :id => word,
        :count => 1
      }
   end
 
-  def reduce_words(word1, word2) when word1 == %{} do
+  defp reduce_words(word1, word2) when word1 == %{} do
     word2
   end
-  def reduce_words(word1, word2) when word2 == %{} do
+  defp reduce_words(word1, word2) when word2 == %{} do
     word1
   end
-  def reduce_words(word1, word2) do
+  defp reduce_words(word1, word2) do
     # Já vamos considerar que as duas palavras tem mesmo 'id' (já foi feito o shuffle)
     %{
       :id => word1[:id],
