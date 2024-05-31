@@ -6,33 +6,35 @@ defmodule MapReduce do
     |> master(map_func, reduce_func, acc)
   end
   # Chamada recebendo o caminho de um arquivo (para o caso de fazer a contagem de palavras)
-  def main(file_path \\ "test.txt", map_func \\ &map_words/1, reduce_func \\ &reduce_words/2, acc \\ %{}) do
+  def main(file_path, map_func, reduce_func, acc) do
     dividir_dataset(file_path)
     |> main(map_func, reduce_func, acc)
+  end
+  def main() do
+    dividir_dataset("test.txt")
+    |> main(&map_words/1, &reduce_words/2, %{})
   end
 
   defp master(list, fun_map, fun_reduce,acc) do
     map_manager(list, fun_map)
-    list = receber_msgs(length(list))
-    |> concatena()
+    list = receber_msgs([], length(list)) |> concatena([])
     list = shuffle_sort(list, :id)
     particoes = particionar_shuffle(list, [])
     reduce_manager(particoes, fun_reduce, acc)
-    receber_msgs(length(particoes))
-    |> shuffle_sort(:count)
+    receber_msgs([], length(particoes)) |> shuffle_sort(:count)
   end
 
   defp number_of_native_threads(), do: System.schedulers()
 
-  defp receber_msgs(msgs \\ [], num_msgs) when num_msgs > 0 do
+  defp receber_msgs(msgs, num_msgs) when num_msgs > 0 do
     receive do
        msg -> receber_msgs([msg | msgs], num_msgs - 1)
     end
   end
-  defp receber_msgs(msgs, num_msgs), do: msgs
+  defp receber_msgs(msgs, _), do: msgs
 
   defp concatena([], curr), do: curr
-  defp concatena([head | tail], curr \\ []), do: concatena(tail, head ++ curr)
+  defp concatena([head | tail], curr), do: concatena(tail, head ++ curr)
 
   defp formar_listas(list, num) do
     nova_list =
